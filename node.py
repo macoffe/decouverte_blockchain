@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 
+from ast import arg
+import random
 import sys
 import threading
 import hashlib
@@ -59,14 +61,15 @@ class Node:
         return "newblock posted"
 
     def proof_of_work(self, data, last_block_hash):
-        nonce = 0
+        nonce = random.randint(0, 1000)
         hash_operation = "1"
 
-        while hash_operation[0] != '0':
+        while hash_operation[:2] != '00':
             if last_block_hash == node.blockchain.chain[-1].previous_hash:
                 return (None, None)
-            nonce += 1
-            work = f"{nonce}{data}{self.blockchain.chain[-1].hash}"
+            nonce = random.randint(0, 1000)
+            print(node.blockchain.chain[-1].hash)
+            work = f"{nonce}{data}{node.blockchain.chain[-1].hash}"
             hash_operation = hashlib.sha256(work.encode()).hexdigest()
             print(f"{work} > {hash_operation}")
 
@@ -82,12 +85,13 @@ class Node:
         check = f"{nonce}{data}{last_hash}"
         hash_check = hashlib.sha256(check.encode()).hexdigest()
 
-        if hash_check == hash_operation:
+        if hash_check == hash_operation and last_hash == node.blockchain.chain[-1].hash:
             new_block = Block(node.id, last_hash, hash_operation, is_mined=True)
             node.blockchain.chain.append(new_block)
-            #for ip in ip_list
             node.blockchain.to_string()
-            threading.Thread(target=send_newblock, args=(hash_operation, node.id, last_hash)).start()
+            threading.Thread(target=send_newblock, args=("5000", hash_operation, node.id, last_hash)).start()
+            threading.Thread(target=send_newblock, args=("5002", hash_operation, node.id, last_hash)).start()
+            threading.Thread(target=send_newblock, args=("5004", hash_operation, node.id, last_hash)).start()
             return "true"
         else:
             return "false"
@@ -99,19 +103,19 @@ class Node:
         #last_block_previous_hash = node.blockchain.chain[-1].previous_hash
         hash_operation, nonce = node.proof_of_work(data, last_block_hash)
         if hash_operation != None:
-            #for ip in ip_list
-            threading.Thread(target=send_check, args=(hash_operation,nonce,data,last_block_hash)).start()
-            
+            threading.Thread(target=send_check, args=("5001", hash_operation,nonce,data,last_block_hash)).start()
+
         return data
 
-def send_transaction():
-    requests.post(f'http://127.0.0.1:5000/post_transaction?data={sys.argv[2]}')
-def send_check(hash_operation, nonce, data, last_block_hash):
-    requests.post(f'http://127.0.0.1:5001/check_work?hash_operation={hash_operation}&nonce={nonce}&data={data}&last_hash={last_block_hash}')
-def send_newblock(hash_operation, node_id, last_hash):
-    requests.post(f'http://127.0.0.1:5004/post_newblock?hash_operation={hash_operation}&node_id={node_id}&last_hash={last_hash}')
-    requests.post(f'http://127.0.0.1:5000/post_newblock?hash_operation={hash_operation}&node_id={node_id}&last_hash={last_hash}')
-    requests.post(f'http://127.0.0.1:5002/post_newblock?hash_operation={hash_operation}&node_id={node_id}&last_hash={last_hash}')
+def send_transaction(port, data):
+    #for ip in ip_list
+    requests.post(f'http://127.0.0.1:{port}/post_transaction?data={data}')
+def send_check(port, hash_operation, nonce, data, last_block_hash):
+    #for ip in ip_list, select one
+    requests.post(f'http://127.0.0.1:{port}/check_work?hash_operation={hash_operation}&nonce={nonce}&data={data}&last_hash={last_block_hash}')
+def send_newblock(port, hash_operation, node_id, last_hash):
+    #for ip in ip_list
+    requests.post(f'http://127.0.0.1:{port}/post_newblock?hash_operation={hash_operation}&node_id={node_id}&last_hash={last_hash}')
 
 
 if __name__ == "__main__" :
@@ -122,6 +126,8 @@ if __name__ == "__main__" :
         node = Node(sys.argv[1])
     else:
         node = Node(sys.argv[1])
-        threading.Thread(target=send_transaction).start()
+        threading.Thread(target=send_transaction, args=("5000", sys.argv[2])).start()
+        threading.Thread(target=send_transaction, args=("5002", sys.argv[2])).start()
+        threading.Thread(target=send_transaction, args=("5004", sys.argv[2])).start()
 
-    app.run(debug=True, port=sys.argv[3])
+    app.run(port=sys.argv[3])

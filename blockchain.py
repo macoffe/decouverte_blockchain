@@ -14,13 +14,15 @@ class Blockchain:
         b_hash = hashlib.sha256("genesis".encode()).hexdigest()
         genesis_block = Block("root", "0",b_hash, is_mined=True)
         self.chain.append(genesis_block)
-        b_hash = hashlib.sha256("genesis2".encode()).hexdigest()
-        genesis_block = Block("root", "0",b_hash, is_mined=True)
-        self.chain.append(genesis_block)
+        # b_hash = hashlib.sha256("genesis2".encode()).hexdigest()
+        # genesis_block = Block("root", "0",b_hash, is_mined=True)
+        # self.chain.append(genesis_block)
 
-    def last_block(self):
-        return self.chain[-1]
+    # def last_block(self):
+    #     return self.chain[-1]
 
     def to_string(self):
+        print("blockchain---------------------------------------------------")
         for block in self.chain:
             print(block.hash)
+        print("-------------------------------------------------------------")
