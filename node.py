@@ -10,7 +10,6 @@ import requests
 
 from block import Block
 from blockchain import Blockchain
-from clientthread import ClientThread
 
 ###COPIE DE LA BLOCKCHAIN
 #évalutation de performance, temps d'exe, nb itération
@@ -53,8 +52,14 @@ class Node:
         node_id = request.args.get('node_id')
         last_hash = request.args.get('last_hash')
 
+        print("test post nb")
+
         new_block = Block(node_id, last_hash, hash_operation, is_mined=True)
         node.blockchain.chain.append(new_block)
+
+        node.blockchain.to_string()
+        return "newblock posted"
+        
     
     # def send_transaction(self):
     #     #self.node_socket.bind((self.host, self.port))
@@ -98,32 +103,35 @@ class Node:
         while hash_operation[0] != '0':
             if last_block_hash == node.blockchain.chain[-1].previous_hash:
                 return (None, None)
+            nonce += 1
             work = f"{nonce}{data}{self.blockchain.chain[-1].hash}"
             hash_operation = hashlib.sha256(work.encode()).hexdigest()
             print(f"{work} > {hash_operation}")
-            nonce += 1
         print(nonce)
 
         return (hash_operation, nonce)
 
     @app.route('/check_work', methods=['POST'])
-    def check_work(self, nonce, data, previous_hash):
+    def check_work():
         hash_operation = request.args.get('hash_operation')
         nonce = request.args.get('nonce')
         data = request.args.get('data')
         last_hash = request.args.get('last_hash')
 
-        check = f"{nonce}{data}{previous_hash}"
+        check = f"{nonce}{data}{last_hash}"
         hash_check = hashlib.sha256(check.encode()).hexdigest()
 
         if hash_check == hash_operation:
             new_block = Block(node.id, last_hash, hash_operation, is_mined=True)
-            self.blockchain.chain.append(new_block)
+            node.blockchain.chain.append(new_block)
             #for ip in ip_list
-            requests.post(f'http://127.0.0.1:5000/post_newblock?hash_operation={hash_operation}&node_id={node.id}&last_hash={last_hash}')
-            return True
+            requests.post(f'http://127.0.0.1:5004/post_newblock?hash_operation={hash_operation}&node_id={node.id}&last_hash={last_hash}')
+            requests.post(f'http://127.0.0.1:5001/post_newblock?hash_operation={hash_operation}&node_id={node.id}&last_hash={last_hash}')
+            requests.post(f'http://127.0.0.1:5002/post_newblock?hash_operation={hash_operation}&node_id={node.id}&last_hash={last_hash}')
+            return "true"
         else:
-            return False
+            print("false")
+            return "false"
 
     @app.route('/post_transaction', methods=['POST'])
     def post_transaction():
@@ -134,7 +142,7 @@ class Node:
         if hash_operation != None:
             #for ip in ip_list
             print("test")
-            requests.post(f'http://127.0.0.1:5001/check_work?hash_operation={hash_operation}&nonce={nonce}&data={data}&last_hash={last_block_hash}')
+            response = requests.post(f'http://127.0.0.1:5002/check_work?hash_operation={hash_operation}&nonce={nonce}&data={data}&last_hash={last_block_hash}')
 
         # block = Block(node.id, node.blockchain.chain[-1].previous_hash, hash_operation)
         return data
@@ -142,33 +150,33 @@ class Node:
         
     # def get_transaction():
 
-    def give_hash(self):
+    # def give_hash(self):
         #self.node_socket.connect((self.host, self.port))
         
-        (hash,proof)=self.proof_of_work()
-        trame=f"{hash};{self.id}"
-        print(trame)
-        self.node_socket.send(trame.encode())
-        trame=self.node_socket.recv(2048).decode()
-        if trame == "good" :
-            self.value+=proof
-        elif trame == "bad" :
-            self.value+=(proof/2)
+        # (hash,proof)=self.proof_of_work()
+        # trame=f"{hash};{self.id}"
+        # print(trame)
+        # self.node_socket.send(trame.encode())
+        # trame=self.node_socket.recv(2048).decode()
+        # if trame == "good" :
+        #     self.value+=proof
+        # elif trame == "bad" :
+        #     self.value+=(proof/2)
         
         #self.node_socket.close()
         
-    def start(self) :
+    # def start(self) :
         #self.node_socket.connect((self.host, self.port))
-        while True :
-            try:
-                self.node_socket.connect((self.host, self.port))
-                print("tentative de minage...")
-                self.give_hash()
-                print("fin de minage")
-                self.node_socket.close()
-            except:
-                print("pas de transaction disponible")
-                sleep(5)
+        # while True :
+        #     try:
+        #         self.node_socket.connect((self.host, self.port))
+        #         print("tentative de minage...")
+        #         self.give_hash()
+        #         print("fin de minage")
+        #         self.node_socket.close()
+        #     except:
+        #         print("pas de transaction disponible")
+        #         sleep(5)
                 
         #self.node_socket.close()
 
@@ -192,9 +200,11 @@ if __name__ == "__main__" :
     if sys.argv[2] == "init" :
         print("Creation blockchain")
         node = Node(sys.argv[1], init_blockchain=True)
+    elif sys.argv[2] == "approuver" :
+        node = Node(sys.argv[1])
     else:
         node = Node(sys.argv[1])
         response = requests.post(f'http://127.0.0.1:5000/post_transaction?data={sys.argv[2]}')
         # print(response.text)
 
-    app.run(threaded=True, debug=True, port=sys.argv[3])
+    app.run(debug=True, port=sys.argv[3])
