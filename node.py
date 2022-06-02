@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 
-from ast import arg
 import random
 import sys
 import threading
