@@ -13,10 +13,7 @@ import requests
 from block import Block
 from blockchain import Blockchain
 
-###COPIE DE LA BLOCKCHAIN
 #évalutation de performance, temps d'exe, nb itération
-#+diagramme réseau, 
-# blockchain et mineur -> noeuds.
 
 app =  Flask(__name__)
 
@@ -64,7 +61,7 @@ class Node:
         nonce = random.randint(0, 1000)
         hash_operation = "1"
 
-        while hash_operation[:2] != '00':
+        while hash_operation[:3] != '000':
             if last_block_hash == node.blockchain.chain[-1].previous_hash:
                 return (None, None)
             nonce = random.randint(0, 1000)
@@ -89,9 +86,10 @@ class Node:
             new_block = Block(node.id, last_hash, hash_operation, is_mined=True)
             node.blockchain.chain.append(new_block)
             node.blockchain.to_string()
+            #for ip in ip_list
             threading.Thread(target=send_newblock, args=("5000", hash_operation, node.id, last_hash)).start()
             threading.Thread(target=send_newblock, args=("5002", hash_operation, node.id, last_hash)).start()
-            threading.Thread(target=send_newblock, args=("5004", hash_operation, node.id, last_hash)).start()
+            threading.Thread(target=send_newblock, args=("5003", hash_operation, node.id, last_hash)).start()
             return "true"
         else:
             return "false"
@@ -100,23 +98,19 @@ class Node:
     def post_transaction():
         data = request.args.get('data')
         last_block_hash = node.blockchain.chain[-1].hash
-        #last_block_previous_hash = node.blockchain.chain[-1].previous_hash
         hash_operation, nonce = node.proof_of_work(data, last_block_hash)
         if hash_operation != None:
+            #for ip in ip_list, select one
             threading.Thread(target=send_check, args=("5001", hash_operation,nonce,data,last_block_hash)).start()
 
         return data
 
 def send_transaction(port, data):
-    #for ip in ip_list
     requests.post(f'http://127.0.0.1:{port}/post_transaction?data={data}')
 def send_check(port, hash_operation, nonce, data, last_block_hash):
-    #for ip in ip_list, select one
     requests.post(f'http://127.0.0.1:{port}/check_work?hash_operation={hash_operation}&nonce={nonce}&data={data}&last_hash={last_block_hash}')
 def send_newblock(port, hash_operation, node_id, last_hash):
-    #for ip in ip_list
     requests.post(f'http://127.0.0.1:{port}/post_newblock?hash_operation={hash_operation}&node_id={node_id}&last_hash={last_hash}')
-
 
 if __name__ == "__main__" :
     if sys.argv[2] == "init" :
@@ -126,8 +120,9 @@ if __name__ == "__main__" :
         node = Node(sys.argv[1])
     else:
         node = Node(sys.argv[1])
+        #for ip in ip_list
         threading.Thread(target=send_transaction, args=("5000", sys.argv[2])).start()
         threading.Thread(target=send_transaction, args=("5002", sys.argv[2])).start()
-        threading.Thread(target=send_transaction, args=("5004", sys.argv[2])).start()
+        threading.Thread(target=send_transaction, args=("5003", sys.argv[2])).start()
 
     app.run(port=sys.argv[3])
