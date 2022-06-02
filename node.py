@@ -61,7 +61,7 @@ class Node:
         nonce = random.randint(0, 1000)
         hash_operation = "1"
 
-        while hash_operation[:3] != '000':
+        while hash_operation[:2] != '00':
             if last_block_hash == node.blockchain.chain[-1].previous_hash:
                 return (None, None)
             nonce = random.randint(0, 1000)
@@ -90,7 +90,7 @@ class Node:
             threading.Thread(target=send_newblock, args=("5000", hash_operation, node.id, last_hash)).start()
             threading.Thread(target=send_newblock, args=("5002", hash_operation, node.id, last_hash)).start()
             threading.Thread(target=send_newblock, args=("5003", hash_operation, node.id, last_hash)).start()
-            return "true"
+            return "true"   
         else:
             return "false"
 
